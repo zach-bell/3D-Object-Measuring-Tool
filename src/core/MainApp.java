@@ -5,6 +5,7 @@ import java.io.File;
 import processing.core.PApplet;
 import processing.core.PImage;
 import processing.core.PShape;
+import processing.core.PVector;
 import processing.event.MouseEvent;
 
 public class MainApp extends PApplet {
@@ -19,10 +20,13 @@ public class MainApp extends PApplet {
 	private float uiWidth = 280, uiHeight = 300, uiTextPadding = 10;
 	private int mouseLastX = 0, mouseLastY = 0;
 	private float mouseWheel = 0;
-	private float rotateObjectY = 0, rotateCameraX = 0.9f * PI;
-	private float mouseScrollFactor = 1;
 	private boolean menuToggle = true;
 	private boolean devMenuToggle = false;
+	// camera variables
+	private PVector camPos, camLookAt, camUp;
+	private float fovy = PI / 2.0f, nearClippingPlaneDistance = 0;
+	private float rotateObjectY = 0, rotateCameraX = 0.9f * PI;
+	private float mouseScrollFactor = 1;
 	
 	public void settings() {
 		size(1280, 720, P3D);
@@ -33,9 +37,12 @@ public class MainApp extends PApplet {
 		
 		surface.setTitle("VisuPoint");
 		
-		// Sets the camera object
-		camera(width / 2.0f, height / 2.0f, (height/2.0f) / tan(PI * 30.0f / 180.0f),
-				width/2.0f, height/2.0f, 0, 0,1,0);
+		// Sets the camera variables
+		camPos = new PVector(width / 2.0f, height / 2.0f, (height/2.0f) / tan(PI * 30.0f / 180.0f));
+		camLookAt = new PVector(width/2.0f, height/2.0f, 0);
+		camUp = new PVector(0, 1, 0);
+		
+		camera(camPos.x, camPos.y, camPos.z, camLookAt.x, camLookAt.y, camLookAt.z, camUp.x, camUp.y, camUp.z);
 		
 		menuIconImage = loadImage("res/hamburger-menu-icon.png");
 	}
@@ -101,6 +108,7 @@ public class MainApp extends PApplet {
 		}
 		drawDevText();
 	}
+	
 	// Draws text about variables in the program for dev purposes
 	private void drawDevText() {
 		// Headers
@@ -133,6 +141,34 @@ public class MainApp extends PApplet {
 		translate(width / 2, height / 2);
 		rotateX(rotateCameraX);
 		getMouseDragging();
+	}
+	
+	private void rayPicking() {
+		int x = mouseX, y = mouseY;
+		PVector view = PVector.sub(camLookAt, camPos);
+		view = view.normalize();
+		PVector h = view.cross(camUp);
+		h = h.normalize();
+		PVector v = h.cross(view);
+		v = v.normalize();
+		
+		// Sets 
+		float vLength = tan(fovy / 2) * nearClippingPlaneDistance;
+		float hLength = vLength * (width / height);
+		
+		
+		// translates mouse coordinates to center
+		x -= width / 2;
+		y -= height /2;
+		// scale mouse coordinates to half view port w/h
+		x /= (width / 2);
+		y /= (height / 2);
+		
+		// linear comb of intersection of picking ray with view port plane
+		PVector pos = new PVector(camPos.x + view.x * nearClippingPlaneDistance + h.x * x + v.x * y,
+				camPos.y + view.y * nearClippingPlaneDistance + h.y * x + v.y * y,
+				camPos.z + view.z * nearClippingPlaneDistance + h.z * x + v.z * y);
+		PVector dir = PVector.sub(pos, camPos);
 	}
 	
 	// Listens for a mouse click
