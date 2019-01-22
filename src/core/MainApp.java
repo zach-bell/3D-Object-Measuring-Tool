@@ -16,11 +16,13 @@ public class MainApp extends PApplet {
 	private PShape currentShape;
 	private PImage menuIconImage;
 	// Private variables
-	private float uiWidth = 280, uiHeight = 300, uiPadding = 10;
+	private float uiWidth = 280, uiHeight = 300, uiTextPadding = 10;
 	private int mouseLastX = 0, mouseLastY = 0;
+	private float mouseWheel = 0;
 	private float rotateObjectY = 0, rotateCameraX = 0.9f * PI;
 	private float mouseScrollFactor = 1;
-	private boolean menuToggle = false;
+	private boolean menuToggle = true;
+	private boolean devMenuToggle = false;
 	
 	public void settings() {
 		size(1280, 720, P3D);
@@ -29,7 +31,7 @@ public class MainApp extends PApplet {
 	public void setup() {
 		currentFile = null;
 		
-		surface.setTitle("3D Object Measuring Tool because I don't know what to name it yet.");
+		surface.setTitle("VisuPoint");
 		
 		// Sets the camera object
 		camera(width / 2.0f, height / 2.0f, (height/2.0f) / tan(PI * 30.0f / 180.0f),
@@ -38,6 +40,7 @@ public class MainApp extends PApplet {
 		menuIconImage = loadImage("res/hamburger-menu-icon.png");
 	}
 	
+	// Main draw loop
 	public void draw() {
 		background(100);
 		lights();
@@ -45,7 +48,7 @@ public class MainApp extends PApplet {
 		drawCamera();
 		
 		if (currentShape != null) {
-			scale(3f * mouseScrollFactor, 3f * mouseScrollFactor, 3f * mouseScrollFactor);
+			scale(4f * mouseScrollFactor, 4f * mouseScrollFactor, 4f * mouseScrollFactor);
 			shape(currentShape, 0, 0);
 			currentShape.rotateY(rotateObjectY);
 		}
@@ -61,50 +64,107 @@ public class MainApp extends PApplet {
 		}
 		fill(200);
 		image(menuIconImage, 0, 0, 50, 50);
+		
+		if (devMenuToggle) {
+			drawDevUi();
+		}
 	}
 	
-	public void drawText() {
+	// Draws text elements on the screen
+	private void drawText() {
 		textSize(34);
 		fill(230);
-		text("Open New File", uiPadding, 100);
+		text("Open New File", uiTextPadding, 100);
 		// File information
 		textSize(24);
 		if (currentFile != null) {
 			fill(200);
-			text("" + currentFile.getName(), uiPadding, 130);
+			text("" + currentFile.getName(), uiTextPadding, 130);
 		}
 		// Program information
 		fill(180);
-		text("Version: " + VERSION, uiPadding, uiHeight - 60);
-		text("Created by:", uiPadding, uiHeight - 35);
-		text("Zachary Vanscoit", uiPadding, uiHeight - 10);
+		text("Version: " + VERSION, uiTextPadding, uiHeight - 60);
+		text("Created by:", uiTextPadding, uiHeight - 35);
+		text("Zachary Vanscoit", uiTextPadding, uiHeight - 10);
 	}
 	
-	public void drawCamera() {
+	// Draws the dev UI
+	private void drawDevUi() {
+		fill(35);
+		rect(width - uiWidth, 0, uiWidth, height);
+		if (mousePressed) {
+			noFill();
+			stroke(100, 255, 255);
+			rect(mouseLastX - 5, mouseLastY - 5, 10, 10);
+			line(mouseLastX, mouseLastY, mouseX, mouseY);
+			noStroke();
+		}
+		drawDevText();
+	}
+	// Draws text about variables in the program for dev purposes
+	private void drawDevText() {
+		// Headers
+		fill(255, 100, 100);
+		textSize(30);
+		text("Mouse Vars", (width - uiWidth) + uiTextPadding, 32);
+		text("Camera Vars", (width - uiWidth) + uiTextPadding, 200);
+		text("Object vars", (width - uiWidth) + uiTextPadding, 300);
+		
+		// Vars
+		fill(100, 255, 255);
+		textSize(20);
+		if (currentFile != null)
+			text("" + currentFile.getAbsolutePath(), uiTextPadding, height - uiTextPadding);
+		// Mouse vars
+		text("Mouse X: " + mouseX, (width - uiWidth) + uiTextPadding, 64);
+		text("Mouse Y: " + mouseY, (width - uiWidth) + uiTextPadding, 88);
+		text("Mouse Pressed: " + mousePressed, (width - uiWidth) + uiTextPadding, 112);
+		text("Mouse wheel: " + nf(mouseWheel, 1, 2), (width - uiWidth) + uiTextPadding, 134);
+		// Camera Vars
+		text("Camera Rotate X: " + nf(rotateCameraX, 2, 3), (width - uiWidth) + uiTextPadding, 224);
+		// Object Vars
+		if (currentShape != null) {
+			text("Object Rotation Y: " + nf(rotateObjectY, 1, 3), (width - uiWidth) + uiTextPadding, 324);
+		}
+	}
+	
+	// Draws the camera and translates it appropriately
+	private void drawCamera() {
 		translate(width / 2, height / 2);
 		rotateX(rotateCameraX);
 		getMouseDragging();
 	}
 	
+	// Listens for a mouse click
 	public void mouseClicked() {
 		if ((mouseX > 0) & (mouseY > 0) & (mouseX < 50) & (mouseY < 50))
 			menuToggle = !menuToggle;
 		if (menuToggle & ((mouseX < width) & (mouseY < height) & (mouseX > uiWidth) | (mouseY > uiHeight)))
-			menuToggle = false;
+			if (currentFile != null)
+				menuToggle = false;
 		
 		if (menuToggle) {
+			// OpenFile button location
 			if ((mouseX > 10) & (mouseY > 70) & (mouseX < 250) & (mouseY < 100))
 				handleFile();
 		}
 	}
 	
+	// Listens for the mouse wheel to scroll the camera
 	public void mouseWheel(MouseEvent event) {
-		float e = event.getCount();
+		mouseWheel = event.getCount();
 		// e > 0 means mouseWheelUp, while e < 0 means mouseWheelDown
-		if (e > 0) {
-			mouseScrollFactor -= 0.05f;
-		} else if (e < 0){
-			mouseScrollFactor += 0.05f;
+		if (mouseWheel > 0) {
+			mouseScrollFactor -= 0.07f;
+		} else if (mouseWheel < 0){
+			mouseScrollFactor += 0.07f;
+		}
+	}
+	
+	public void keyPressed() {
+		println("Key pressed: " + key);
+		if (key == '1') {
+			devMenuToggle = !devMenuToggle;
 		}
 	}
 	
@@ -127,15 +187,18 @@ public class MainApp extends PApplet {
 			} else if (mouseY > (mouseLastY)+5) {
 				rotateCameraX -= map(mouseY,mouseLastY,(mouseLastY + width),0,0.08f);
 			}
+			rotateCameraX = constrain(rotateCameraX, (PI / 2), ((3 * PI) / 2));
 		} else {
 			rotateObjectY = lerp(0 , rotateObjectY, 0.8f);
 		}
 	}
 	
+	// Handles the file and returns to the top of the method
 	private void handleFile() {
 		selectInput("Select a 3D model to load:", "fileSelected");
 	}
 	
+	// Is called by the selectInput Method
 	public void fileSelected(File selection) {
 		if (selection == null) {
 			println("File window closed with no selection.");
