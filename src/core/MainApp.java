@@ -23,7 +23,7 @@ public class MainApp extends PApplet {
 	private int mouseLastX = 0, mouseLastY = 0;
 	private float mouseWheel = 0;
 	private boolean menuToggle = true;
-	private boolean togglePicking = false;
+	private boolean togglePicking = true;
 	private boolean devMenuToggle = false;
 	// camera variables
 	private PVector camPos, camLookAt, camUp;
@@ -34,6 +34,9 @@ public class MainApp extends PApplet {
 	private PVector pos;
 	private PVector dir;
 	private RayPicking ray;
+	private PVector view;
+	private PVector screenHorizontal;
+	private PVector screenVertical;
 	
 	public void settings() {
 		size(1280, 720, P3D);
@@ -57,6 +60,9 @@ public class MainApp extends PApplet {
 		pos = new PVector();
 		dir = new PVector();
 		ray = new RayPicking();
+		view = new PVector();
+		screenHorizontal = new PVector();
+		screenVertical = new PVector();
 	}
 	
 	// Main draw loop
@@ -156,12 +162,18 @@ public class MainApp extends PApplet {
 		if (currentShape != null) {
 			text("Object Rotation Y: " + nf(rotateObjectY, 1, 3), (width - uiWidth) + uiTextPadding, 324);
 		}
-		text("Ray Pos (x,y,z): " + nf(ray.getClickPosInWorld().x, 3, 2) + ", " + 
-									nf(ray.getClickPosInWorld().y, 3, 2) + ", " +
-									nf(ray.getClickPosInWorld().z, 3, 2),
-									(width - uiWidth) + uiTextPadding, 374);
-		text("Ray dir (x,y,z): " + nf(ray.getDirection().x, 3, 2) + ", " + nf(ray.getDirection().y, 3, 2) + ", " +
-								nf(ray.getDirection().z), (width - uiWidth) + uiTextPadding, 398);
+		text("Ray Pos (x,y,z): ", (width - uiWidth), 374);
+		text(nf(ray.getClickPosInWorld().x, 1, 2) + ", " + nf(ray.getClickPosInWorld().y, 1, 2) +
+			", " + nf(ray.getClickPosInWorld().z, 1, 2), (width - uiWidth) + uiTextPadding, 398);
+		text("Ray dir (x,y,z): ", (width - uiWidth), 422);
+		text(nf(ray.getDirection().x, 1, 2) + ", " + nf(ray.getDirection().y, 1, 2) + ", " +
+			nf(ray.getDirection().z, 1, 2), (width - uiWidth) + uiTextPadding, 448);
+		text("Ray screenHorizontal (x,y,z):", (width - uiWidth) + uiTextPadding, 474);
+		text("" + nf(screenHorizontal.x, 1, 3) + ", " + nf(screenHorizontal.y, 1, 3) + ", " + 
+		nf(screenHorizontal.z, 1, 3), (width - uiWidth) + uiTextPadding, 500);
+		text("Ray screenVertical (x,y,z):", (width - uiWidth) + uiTextPadding, 526);
+		text("" + nf(screenHorizontal.x, 1, 3) + ", " + nf(screenHorizontal.y, 1, 3) + ", " + 
+		nf(screenHorizontal.z, 1, 3), (width - uiWidth) + uiTextPadding, 552);
 		
 	}
 	
@@ -175,14 +187,14 @@ public class MainApp extends PApplet {
 	private void rayPicking() {
 		int x = mouseX, y = mouseY;
 		// look direction
-		PVector view = PVector.sub(camLookAt, camPos);
+		view = PVector.sub(camLookAt, camPos);
 		view = view.normalize();
 		
 		// screen X
-		PVector screenHorizontal = view.cross(camUp);
+		screenHorizontal = view.cross(camUp);
 		screenHorizontal = screenHorizontal.normalize();
 		// screen Y
-		PVector screenVertical = screenHorizontal.cross(view);
+		screenVertical = screenHorizontal.cross(view);
 		screenVertical = screenVertical.normalize();
 		
 		// Sets 
@@ -196,8 +208,8 @@ public class MainApp extends PApplet {
 		ray.getClickPosInWorld().add(view);
 		
 		// translates mouse coordinates to center
-		x -= width / 2;
-		y -= height /2;
+		x -= (width / 2);
+		y -= (height /2);
 		// scale mouse coordinates to half view port w/h
 		x /= (width / 2);
 		y /= (height / 2);
@@ -226,16 +238,16 @@ public class MainApp extends PApplet {
 			// OpenFile button location
 			if ((mouseX > 10) & (mouseY > 70) & (mouseX < 250) & (mouseY < 100))
 				handleFile();
-		if ((mouseX > uiTextPadding) & (mouseY > (height - uiButtonHeight + uiTextPadding)) & 
+		if ((mouseX > 0) & (mouseY > (height - uiButtonHeight)) & 
 				(mouseX < (uiTextPadding + uiButtonWidth)) & (mouseY < (height - uiTextPadding))) {
 			togglePicking = !togglePicking;
+			println("picking " + togglePicking);
 			return;
 		}
 		if (menuToggle & ((mouseX < width) & (mouseY < height) & (mouseX > uiWidth) | (mouseY > uiHeight)))
 			if (currentFile != null)
 				menuToggle = false;
-		if ((mouseX > 0) & (mouseY > 0) & (mouseX < width) & (mouseY < height)) {
-			println("picking ray....");
+		if (togglePicking & (mouseX > 0) & (mouseY > 0) & (mouseX < width) & (mouseY < height)) {
 			rayPicking();
 		}
 	}
