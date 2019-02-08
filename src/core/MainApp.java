@@ -23,7 +23,7 @@ public class MainApp extends PApplet {
 	private int mouseLastX = 0, mouseLastY = 0;
 	private float mouseWheel = 0;
 	private boolean menuToggle = true;
-	private boolean togglePicking = true;
+	private boolean togglePicking = false;
 	private boolean devMenuToggle = false;
 	// camera variables
 	private PVector camPos, camLookAt, camUp;
